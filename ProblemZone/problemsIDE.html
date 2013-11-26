@@ -1,0 +1,294 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script type="text/javascript" src="../Scripts/jquery-1.7.2.min.js"></script>
+<script type="text/javascript" src="../Scripts/jquery-linedtextarea/jquery-linedtextarea.js"></script>
+<link rel="stylesheet" type="text/css" href="../Scripts/jquery-linedtextarea/jquery-linedtextarea.css" />
+
+<script type="text/javascript">
+// Enable tab keystroke down to submit a tab character to textarea, #code
+$(document).delegate('#code', 'keydown', function(e) {
+  var keyCode = e.keyCode || e.which;
+
+  if (keyCode == 9) {
+    e.preventDefault();
+    var start = $(this).get(0).selectionStart;
+    var end = $(this).get(0).selectionEnd;
+
+    // set textarea value to: text before caret + tab + text after caret
+    $(this).val($(this).val().substring(0, start)
+                + "\t"
+                + $(this).val().substring(end));
+
+    // put caret at right position again
+    $(this).get(0).selectionStart =
+    $(this).get(0).selectionEnd = start + 1;
+  }
+});
+
+/*
+// Line textarea
+$(function() {
+  // Target all classed with ".lined"
+  $(".lined").linedtextarea( {selectedLine: 1} );
+});
+*/
+
+// Resize Cloud IDE
+var resizeTimer;
+$(window).resize(function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resizeIDE, 100);
+});
+
+// Working variables
+var compileChecker; // Used to store setTimeout for compileCode(). See schedCompile
+var xmlhttp; // global xmlhttp request
+
+function init()
+{
+	loader();
+	resizeIDE();
+}
+
+function schedCompile()
+{
+	clearTimeout(compileChecker); // Cancel any past set Timeouts
+	compileChecker = setTimeout(compileCode,3000); // Create new set Timeout for compileCode()
+}
+
+function compileCode()
+{
+	// Setup
+	if (window.XMLHttpRequest)
+	  {// code for IE7+, Firefox, Chrome, Opera, Safari
+	  xmlhttp=new XMLHttpRequest();
+	  }
+	else
+	  {// code for IE6, IE5
+	  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	  }
+	xmlhttp.onreadystatechange=function()
+	  {
+		processResponse();
+	  };
+	  
+	// Get code
+	username = encodeURIComponent("Glavin"); // *****TESTING*****
+	fname = encodeURIComponent(document.getElementById("fname").value);
+	code = encodeURIComponent(document.getElementById("code").value);
+	input = encodeURIComponent(document.getElementById("input").value);
+	language = encodeURIComponent(document.getElementById("language").value);
+	// Open connection & Send request
+	xmlhttp.open("POST","./compiler.php",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send("username="+username+"&fname="+fname+"&code="+code+"&input="+input+"&language="+language);
+	
+}
+
+function loader()
+{
+
+	// Setup
+	if (window.XMLHttpRequest)
+	  {// code for IE7+, Firefox, Chrome, Opera, Safari
+	  xmlhttp=new XMLHttpRequest();
+	  }
+	else
+	  {// code for IE6, IE5
+	  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	  }
+	xmlhttp.onreadystatechange=function()
+	  {
+	  	processResponse();
+	  };
+	  
+	// Get code
+	username = encodeURIComponent("Glavin"); // *****TESTING*****
+	fname = encodeURIComponent(document.getElementById("fname").value);
+	code = encodeURIComponent(document.getElementById("code").value);
+	input = encodeURIComponent(document.getElementById("input").value);
+	language = encodeURIComponent(document.getElementById("language").value);
+	// Open connection & Send request
+	xmlhttp.open("POST","./loader.php",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send("username="+username+"&fname="+fname+"&code="+code+"&input="+input+"&language="+language);
+
+}
+
+function processResponse()
+{
+	if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+			// Process response text
+			var TYPE = null;
+			var xmlString = "";
+			xmlString = xmlhttp.responseText;
+
+			var parser = new DOMParser();
+			var xmlDoc = parser.parseFromString(xmlString, "application/xml");;
+			TYPE = getXMLDocVal(xmlDoc,"TYPE").result;
+
+			/* For debugging */ // document.getElementById("probInfo").innerHTML = TYPE;//xmlString;
+
+			if ( TYPE == "compiler" )
+			{
+				var output = getXMLDocVal(xmlDoc,"uOutput").result;
+				document.getElementById("output").innerHTML = '<table border="1" cellspacing="1" cellpadding="1" id="output"><tr><th>Input</th><th>Desired Output</th><th>Actual Output</th><th>Stats</th></tr>'+output+'</table><br />';
+				document.getElementById("output2").innerHTML = xmlString;
+			}
+			else if ( TYPE == "loader" )
+			{
+				var pSelect = getXMLDocVal(xmlDoc,"pSelect").result;
+				document.getElementById("fname").innerHTML = pSelect;
+				var probInfo = getXMLDocVal(xmlDoc,"probInfo").result;
+				document.getElementById("probInfo").innerHTML = probInfo;
+				var probCode = getXMLDocVal(xmlDoc,"code").result;
+				document.getElementById("code").innerHTML = probCode;
+			}
+			else
+			{
+				document.getElementById("output2").innerHTML = xmlString;
+			}
+		}
+	
+}
+
+function resizeIDE()
+{
+	var w = getWidth();
+	var h = getHeight();
+	
+	$("#code").css({"width":w-100,"height":h/3});
+	$("#input").css({"width":w-100,"height":h/3});
+
+	
+}
+
+function getXMLDocVal(xmlDoc,tag)
+{
+	try 
+	{
+			var result = xmlDoc.getElementsByTagName(tag)[0].firstChild.nodeValue;
+			return {'success': true, 'result': result, 'error': null};
+	} 
+	catch(e) 
+	{ 
+			return {'success': false, 'result': null, 'error': e.message};
+	}
+			
+}
+
+function getWidth()
+  {
+          var x = 0;
+          if (self.innerHeight)
+          {
+                  x = self.innerWidth;
+          }
+          else if (document.documentElement && document.documentElement.clientHeight)
+          {
+                  x = document.documentElement.clientWidth;
+          }
+          else if (document.body)
+          {
+                  x = document.body.clientWidth;
+          }
+          return x;
+  }
+
+  function getHeight()
+  {
+          var y = 0;
+          if (self.innerHeight)
+          {
+                  y = self.innerHeight;
+          }
+          else if (document.documentElement && document.documentElement.clientHeight)
+          {
+                  y = document.documentElement.clientHeight;
+          }
+          else if (document.body)
+          {
+                  y = document.body.clientHeight;
+          }
+          return y;
+  }
+
+</script>
+
+</head>
+<body onload="init();" >
+
+<div id="main">
+<!--
+Important note: The file name is "code". For example, "code.py", "code.java", and "code.cpp". Keep that in mind when naming classes, such as in Java (ie. "public class code {...}"). 
+-->
+<a name="goToTop">Problem Zone - Programming IDE</a>
+
+<div id="nav">
+<hr/>
+<a href="#goToTop">Top</a>&nbsp;
+<a href="#goToCode">Code</a>&nbsp;
+<a href="#goToCustomInput">Input</a>&nbsp;
+<a href="#goToOutput">Output</a>&nbsp;
+<hr/>
+</div>
+<br/>
+
+
+Select a Programming Language:
+<select id="language" name="language" onchange="loader()" >
+<option value="Python">Python</option>
+<option value="Java">Java</option>
+<option value="C++">C++</option>
+</select>
+<br />
+<br />
+
+Select a Problem: 
+<!--<div id="pSelect">-->
+<select id="fname" name="fname" onchange="loader()" >
+</select>
+<!--</div>-->
+
+<!--
+File Name (excluding extensions, no .py, .java, or .cpp):<input <? if ($mobile) { echo 'autocapitalize="off" autocorrect="off"'; } ?> id="fname2" name="fname2" value="<?php echo $pname; ?>" />
+-->
+<!-- <input type="submit" value="Load" id="load" name="load" onclick="loader()" >
+<br />
+<br /> -->
+<pre id="probInfo">
+
+</pre>
+<br />
+
+<a name="goToCode">Code:</a><br />
+<hr/>
+<textarea class="lined" id="code" name="code" onkeyup="schedCompile();"></textarea>
+<br />
+<br />
+
+<a name="goToCustomInput">Custom Input:</a><br />
+<hr/>
+<textarea class="lined" id="input" name="input" onkeyup="schedCompile();" ></textarea>
+<br />
+<br />
+<hr />
+
+<a name="goToOutput"></a><br />
+
+<input type="submit" value="Run" id="run" name="run" onclick="compileCode()" >
+</hr>
+</br>
+<div id="output" name="output" ></div>
+
+<!-- DEBUGGING --> <textarea id="output2" name="output2" width="100%" height="50px" ></textarea>
+
+<br />
+<br />
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,2 @@
+Write a program to take a standard input and then standard output (print) it three times, each on a new line.
+Assumptions: It is a single line input, no new line "\n" characters.

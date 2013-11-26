@@ -1,0 +1,4 @@
+./code.java:3: error: class cod1e is public, should be declared in a file named cod1e.java
+public class cod1e
+       ^
+1 error

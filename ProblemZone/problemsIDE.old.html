@@ -1,0 +1,205 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script type="text/javascript" src="../Scripts/jquery-1.7.2.min.js"></script>
+<script type="text/javascript" src="../Scripts/jquery-linedtextarea/jquery-linedtextarea.js"></script>
+<link rel="stylesheet" type="text/css" href="../Scripts/jquery-linedtextarea/jquery-linedtextarea.css" />
+
+<script type="text/javascript" language="JavaScript">
+var compileChecker; // Used to store setTimeout for compileCode(). See schedCompile
+var xmlhttp; // global xmlhttp request
+
+function init()
+{
+	loader();
+}
+
+function schedCompile()
+{
+clearTimeout(compileChecker); // Cancel any past set Timeouts
+compileChecker = setTimeout(compileCode,3000); // Create new set Timeout for compileCode()
+}
+
+function compileCode()
+{
+	// Setup
+	if (window.XMLHttpRequest)
+	  {// code for IE7+, Firefox, Chrome, Opera, Safari
+	  xmlhttp=new XMLHttpRequest();
+	  }
+	else
+	  {// code for IE6, IE5
+	  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	  }
+	xmlhttp.onreadystatechange=function()
+	  {
+		processResponse();
+	  };
+	  
+	// Get code
+	username = encodeURIComponent("Glavin"); // *****TESTING*****
+	fname = encodeURIComponent("HelloWorld"); // escape(document.getElementById("fname").value);
+	code = encodeURIComponent(document.getElementById("code").value);
+	input = encodeURIComponent(document.getElementById("input").value);
+	language = encodeURIComponent(document.getElementById("language").value);
+	// Open connection & Send request
+	xmlhttp.open("POST","./compiler.php",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send("username="+username+"&fname="+fname+"&code="+code+"&input="+input+"&language="+language);
+	
+}
+
+function loader()
+{
+
+	// Setup
+	if (window.XMLHttpRequest)
+	  {// code for IE7+, Firefox, Chrome, Opera, Safari
+	  xmlhttp=new XMLHttpRequest();
+	  }
+	else
+	  {// code for IE6, IE5
+	  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	  }
+	xmlhttp.onreadystatechange=function()
+	  {
+	  	processResponse();
+	  };
+	  
+	// Get code
+	username = encodeURIComponent("Glavin"); // *****TESTING*****
+	fname = encodeURIComponent("HelloWorld"); // escape(document.getElementById("fname").value);
+	code = encodeURIComponent(document.getElementById("code").value);
+	input = encodeURIComponent(document.getElementById("input").value);
+	language = encodeURIComponent(document.getElementById("language").value);
+	// Open connection & Send request
+	xmlhttp.open("POST","./loader.php",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send("username="+username+"&fname="+fname+"&code="+code+"&input="+input+"&language="+language);
+
+}
+
+function processResponse()
+{
+	if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+			// Process response text
+			var TYPE = null;
+			var xmlString = "";
+			xmlString = xmlhttp.responseText;
+			var parser = new DOMParser();
+			var xmlDoc = parser.parseFromString(xmlString, "application/xml");;
+			TYPE = getXMLDocVal(xmlDoc,"TYPE").result;
+
+			document.getElementById("probInfo").innerHTML = TYPE;//xmlString;
+
+
+			if ( TYPE == "compiler" )
+			{
+				var output = getXMLDocVal(xmlDoc,"uOutput").result;
+				document.getElementById("output").innerHTML = '<table border="1" id="output"><tr><th>Input</th><th>Desired Output</th><th>Actual Output</th><th>Stats</th></tr>'+output+'</table><br />';
+				document.getElementById("output2").innerHTML = xmlString;
+			}
+			else if ( TYPE == "loader" )
+			{
+				var pSelect = getXMLDocVal(xmlDoc,"probInfo").result;
+				document.getElementById("pSelect").innerHTML = pSelect;
+				document.getElementById("output").innerHTML = "YES!!";//xmlString;
+
+document.getElementById("output2").innerHTML = "xmlString:"+xmlString;
+			}
+			else
+			{
+				document.getElementById("output").innerHTML = xmlString;
+			}
+		}
+}
+
+function getXMLDocVal(xmlDoc,tag)
+{
+	try 
+	{
+			var result = xmlDoc.getElementsByTagName(tag)[0].firstChild.nodeValue;
+			return {'success': true, 'result': result, 'error': null};
+	} 
+	catch(e) 
+	{ 
+			return {'success': false, 'result': null, 'error': e.message};
+	}
+			
+}
+
+</script>
+
+</head>
+<body onload="init();" >
+
+<div id="main">
+<!--
+Important note: The file name is "code". For example, "code.py", "code.java", and "code.cpp". Keep that in mind when naming classes, such as in Java (ie. "public class code {...}"). 
+-->
+<a name="goToTop">Problem Zone - Programming IDE</a>
+
+<div id="nav">
+<hr/>
+<a href="#goToTop">Top</a>&nbsp;
+<a href="#goToCode">Code</a>&nbsp;
+<a href="#goToCustomInput">Input</a>&nbsp;
+<a href="#goToOutput">Output</a>&nbsp;
+<hr/>
+</div>
+<br/>
+
+
+Select a Programming Language:
+<select id="language" name="language" onchange="" >
+<option value="Python">Python</option>
+<option value="Java">Java</option>
+<option value="C++">C++</option>
+</select>
+<br />
+<br />
+
+Select a Problem: 
+<div id="pSelect"></div>
+
+<!--
+File Name (excluding extensions, no .py, .java, or .cpp):<input <? if ($mobile) { echo 'autocapitalize="off" autocorrect="off"'; } ?> id="fname2" name="fname2" value="<?php echo $pname; ?>" />
+-->
+<input type="submit" value="Load" id="load" name="load" onclick="loader()" >
+<br />
+<br />
+<pre id="probInfo">
+
+</pre>
+<br />
+<br />
+
+<a name="goToCode">Code:</a><br />
+<hr/>
+<textarea class="lined" id="code" name="code" onkeyup="schedCompile();"></textarea>
+<br />
+<br />
+
+<a name="goToCustomInput">Custom Input:</a><br />
+<hr/>
+<textarea class="lined" id="input" name="input" onkeyup="schedCompile();" ></textarea>
+<br />
+<br />
+<hr />
+
+<a name="goToOutput"></a><br />
+
+<input type="submit" value="Run" id="run" name="run" onclick="compileCode()" >
+</hr>
+</br>
+<div id="output" name="output" ></div>
+<textarea id="output2" name="output2" ></textarea>
+
+<br />
+<br />
+
+</div>
+
+</body>
+</html>
