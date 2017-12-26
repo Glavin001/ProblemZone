@@ -104,7 +104,7 @@ function runCode($language, $filename, $inputFile)
         $console = shell_exec($command1);
         $output = $console;
         if ($output == '') { // Check for errors
-         // no errors
+            // no errors
             // Run compiled code
             $command2 = 'cd '.$uDir.'; java '.$filename.' < '.$inputFile.' 2>&1';
             $run = shell_exec($command2);
